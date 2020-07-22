@@ -1456,9 +1456,6 @@ defined in the set :math:`\textbf{T}^{e}`, should exceed the load by
         for (t,S_v) in M.processReservePeriods[p] 
         for S_i in M.processInputs[p, t, S_v] 
         for S_o in M.ProcessOutputsByInput[p, t, S_v, S_i]
-        #for t in M.tech_reserve 
-        # Make sure (p,t) combinations are defined
-        if (p,t) in M.activeCapacityAvailable_pt
     )
 
     # the operating reserve margin is a function of the load/demand at any given time.
