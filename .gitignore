@@ -3,3 +3,12 @@ data_files/debug_logs/*.log
 data_files/debug_logs/lp_files/*
 data_files/untracked_data/
 .DS_Store
+data_files/*.dat
+data_files/*.sqlite
+data_files/USNational_Elec_PG_test_run_USNational_Elec_PG_model/
+data_files/US_National.sql
+data_files/US_National_test_run_USNational_model/
+data_files/temoa_utopia_test_run_model/
+temoa_model/config_USNational
+temoa_model/config_USNationalElec_short
+.ipynb_checkpoints/
