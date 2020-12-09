@@ -480,7 +480,7 @@ could satisfy both an end-use and internal system demand, then the output from
 
     DemandConstraintErrorCheck(supply + supply_annual, r, p, s, d, dem)
 
-    expr = supply + supply_annual == M.Demand[r, p, dem] * M.DemandSpecificDistribution[r, s, d, dem]
+    expr = supply + supply_annual >= M.Demand[r, p, dem] * M.DemandSpecificDistribution[r, s, d, dem]
     return expr
 
 def DemandActivity_Constraint(M, r, p, s, d, t, v, dem, s_0, d_0):
@@ -1458,7 +1458,7 @@ we write this equation for all the time-slices defined in the database in each r
        \forall \{r, p, s, d\} \in \Theta_{\text{ReserveMargin}}
 
 """
-    if not M.tech_reserve:  # If reserve set empty, skip the constraint
+    if (not M.tech_reserve) or ((r,p) not in M.processReservePeriods.keys()):  # If reserve set empty or if r,p not in M.processReservePeriod.keys(), skip the constraint
         return Constraint.Skip
 
     cap_avail = sum(
@@ -1475,7 +1475,7 @@ we write this equation for all the time-slices defined in the database in each r
     # generation instead.
     total_generation = sum(
         M.V_FlowOut[r, p, s, d, S_i, t, S_v, S_o] 
-        for (t,S_v) in M.processReservePeriods[r, p] 
+        for (t,S_v) in M.processReservePeriods[r, p]  
         for S_i in M.processInputs[r, p, t, S_v] 
         for S_o in M.ProcessOutputsByInput[r, p, t, S_v, S_i] 
     )
