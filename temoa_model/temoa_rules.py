@@ -404,7 +404,7 @@ def PeriodCost_rule(M, p):
             )
         )
         for r, S_p, S_t, S_v in M.CostVariable.sparse_iterkeys()
-        if S_p == p and S_t not in M.tech_annual
+        if S_p == p and ((S_t not in M.tech_annual) or (S_t in M.tech_curtailment))
         for S_i in M.processInputs[r, S_p, S_t, S_v]
         for S_o in M.ProcessOutputsByInput[r, S_p, S_t, S_v, S_i]
         for s in M.time_season
@@ -422,7 +422,7 @@ def PeriodCost_rule(M, p):
             )
         )
         for r, S_p, S_t, S_v in M.CostVariable.sparse_iterkeys()
-        if S_p == p and S_t in M.tech_annual
+        if S_p == p and ((S_t in M.tech_annual) and (S_t not in M.tech_curtailment))
         for S_i in M.processInputs[r, S_p, S_t, S_v]
         for S_o in M.ProcessOutputsByInput[r, S_p, S_t, S_v, S_i]     
     )    
@@ -635,7 +635,17 @@ reduces computational burden.
 
     CommodityBalanceConstraintErrorCheck(vflow_out + interregional_imports,  vflow_in_ToStorage +  vflow_in_ToNonStorage + vflow_in_ToNonStorageAnnual + interregional_exports, r, p, s, d, c)
 
-    expr = vflow_out + interregional_imports == vflow_in_ToStorage +  vflow_in_ToNonStorage + vflow_in_ToNonStorageAnnual + interregional_exports
+    if c in M.flex_commodities:
+      vflow_out_flex = sum(
+          M.V_Flex[r, p, s, d, S_i, S_t, S_v, c]
+          for S_t, S_v in M.commodityUStreamProcess[r, p, c] if S_t not in M.tech_storage and S_t not in M.tech_annual and S_t in M.tech_flex
+          for S_i in M.ProcessInputsByOutput[r, p, S_t, S_v, c]
+      )
+    
+    if c in M.flex_commodities:
+      expr = vflow_out + interregional_imports == vflow_in_ToStorage +  vflow_in_ToNonStorage + vflow_in_ToNonStorageAnnual + interregional_exports + vflow_out_flex
+    else:
+      expr = vflow_out + interregional_imports == vflow_in_ToStorage +  vflow_in_ToNonStorage + vflow_in_ToNonStorageAnnual + interregional_exports
 
     return expr
 
@@ -706,8 +716,17 @@ While the commodity :math:`c` can only be produced by technologies in the
 
     CommodityBalanceConstraintErrorCheckAnnual(vflow_out + interregional_imports,  vflow_in_annual + vflow_in + interregional_exports, r, p, c)
 
-    expr = vflow_out + interregional_imports ==  vflow_in_annual + vflow_in + interregional_exports
+    if c in M.flex_commodities:
+      vflow_out_flex = sum(
+        M.V_FlexAnnual[r, p, S_i, S_t, S_v, c]
+        for S_t, S_v in M.commodityUStreamProcess[r, p, c] if S_t in M.tech_flex and S_t in M.tech_annual
+        for S_i in M.ProcessInputsByOutput[r, p, S_t, S_v, c]
+    )
 
+    if c in M.flex_commodities:
+      expr = vflow_out + interregional_imports  ==  vflow_in_annual + vflow_in + interregional_exports + vflow_out_flex 
+    else:
+      expr = vflow_out + interregional_imports ==  vflow_in_annual + vflow_in + interregional_exports
 
     return expr
 

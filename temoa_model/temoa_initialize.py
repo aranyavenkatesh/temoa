@@ -50,6 +50,9 @@ class TemoaModel( AbstractModel ):
 		self.processLoans = dict()
 		self.activeFlow_rpsditvo = None
 		self.activeFlow_rpitvo = None
+		self.activeFlex_rpsditvo = None
+		self.activeFlex_rpitvo = None
+		self.flex_commodities = set()
 		self.activeFlowInStorage_rpsditvo = None
 		self.activeCurtailment_rpsditvo = None
 		self.activeActivity_rptv = None
@@ -574,6 +577,10 @@ def CreateSparseDicts ( M ):
 
 		# Add in the period (p) index, since it's not included in the efficiency
 		# table.
+
+		if t in M.tech_flex:
+			M.flex_commodities.add(o)
+
 		for p in M.time_optimize:
 			# Can't build a vintage before it's been invented
 			if p < v: continue
@@ -685,6 +692,26 @@ def CreateSparseDicts ( M ):
 	  (r, p, i, t, v, o)
 
 	  for r,p,t in M.processVintages.keys() if t in M.tech_annual
+	  for v in M.processVintages[ r, p, t ]
+	  for i in M.processInputs[ r, p, t, v ]
+	  for o in M.ProcessOutputsByInput[ r, p, t, v, i ]
+	)
+
+	M.activeFlex_rpsditvo = set(
+	  (r, p, s, d, i, t, v, o)
+
+	  for r,p,t in M.processVintages.keys() if (t not in M.tech_annual) and (t in M.tech_flex)
+	  for v in M.processVintages[ r, p, t ]
+	  for i in M.processInputs[ r, p, t, v ]
+	  for o in M.ProcessOutputsByInput[ r, p, t, v, i ]
+	  for s in M.time_season
+	  for d in M.time_of_day
+	)
+
+	M.activeFlex_rpitvo = set(
+	  (r, p, i, t, v, o)
+
+	  for r,p,t in M.processVintages.keys() if (t in M.tech_annual) and (t in M.tech_flex)
 	  for v in M.processVintages[ r, p, t ]
 	  for i in M.processInputs[ r, p, t, v ]
 	  for o in M.ProcessOutputsByInput[ r, p, t, v, i ]
@@ -908,9 +935,14 @@ def CapacityAvailableVariableIndicesVintage ( M ):
 def FlowVariableIndices ( M ):
 	return M.activeFlow_rpsditvo
 
-
 def FlowVariableAnnualIndices ( M ):
 	return M.activeFlow_rpitvo
+
+def FlexVariablelIndices ( M ):
+	return M.activeFlex_rpsditvo
+
+def FlexVariableAnnualIndices ( M ):
+	return M.activeFlex_rpitvo
 
 def FlowInStorageVariableIndices ( M ):
 	return M.activeFlowInStorage_rpsditvo
