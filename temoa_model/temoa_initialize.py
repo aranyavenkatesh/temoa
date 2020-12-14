@@ -18,6 +18,7 @@ received this license file.  If not, see <http://www.gnu.org/licenses/>.
 from operator import itemgetter as iget
 from itertools import product as cross_product
 from sys import argv, stderr as SE, stdout as SO
+import copy
 
 import IPython
 
@@ -665,25 +666,49 @@ def CreateSparseDicts ( M ):
 			if t in M.tech_exchange:
 				M.importRegions[r[r.find("-")+1:], p, o].add((r[:r.find("-")], t, v, i))
 
-				
-	
-	for r, i, t, v, o in M.Efficiency.sparse_iterkeys():
+	Efficiency_copy = copy.deepcopy(M.Efficiency)
+
+	for r, i, t, v, o in Efficiency_copy.sparse_iterkeys():
 		for p in M.time_optimize:
 			if '-' in r:
 				reg = r.split('-')[0]
-				for (r1, i1, t1, v1, o1) in M.Efficiency.sparse_iterkeys():
+				for (r1, i1, t1, v1, o1) in Efficiency_copy.sparse_iterkeys():
 					if (r1==reg) & (o1==i):
-						#print(r1, i1, t1, v1, o1)
 						if (r1, p, o1) not in M.commodityDStreamProcess:
 							M.commodityDStreamProcess[r1, p, o1] = set()
-						M.commodityDStreamProcess[r1, p, o1].add( (t1, v1) )
-						print((r1, p, o1), M.commodityDStreamProcess[r1, p, o1])
-						if (r1, p, t1, v1, i1) not in M.ProcessOutputsByInput:
-							M.ProcessOutputsByInput[r1, p, t1, v1, i1] = set()
-						M.ProcessOutputsByInput[r1, p, t1, v1, i1].add( o1 )
-						print((r1, p, t1, v1, i1), M.ProcessOutputsByInput[r1, p, t1, v1, i1])
+							M.commodityDStreamProcess[r1, p, o1].add( (t1+'_TRANS', v1) )
+							M.ProcessOutputsByInput[r1, p, t1+'_TRANS', v1, o1] = set()
+							M.ProcessOutputsByInput[r1, p, t1+'_TRANS', v1, o1].add( o1 )
+							if (r1, p, t1+'_TRANS') not in M.processVintages.keys():
+								M.processVintages[r1, p, t1+'_TRANS'] = set()
+							M.processVintages[r1, p, t1+'_TRANS'].add(v1)
+							if ( r1, p, t1+'_TRANS', v1) not in M.processInputs.keys():
+								M.processInputs[ r1, p, t1+'_TRANS', v1] = set()
+							M.processInputs[ r1, p, t1+'_TRANS', v1].add(o1)
+							if ( r1, p, t1+'_TRANS', v1) not in M.processOutputs.keys():
+								M.processOutputs[ r1, p, t1+'_TRANS', v1] = set()
+							M.processOutputs[ r1, p, t1+'_TRANS', v1].add(o1)
+							if (r1, t1+'_TRANS') not in M.processTechs.keys():
+								M.processTechs[r1, t1+'_TRANS'] = set()
+							M.processTechs[r1, t1+'_TRANS'].add( (p, v1) )
+							if (r1, t1+'_TRANS', v1) not in M.LifetimeProcess_rtv:
+								M.LifetimeProcess_rtv.add((r1, t1+'_TRANS', v1))
+								M.LifetimeProcess[r1, t1+'_TRANS', v1] = M.LifetimeProcess[r1, t1, v1]
+							for s in M.time_season:
+								for d in M.time_of_day:
+									if (r1, s, d, t1+'_TRANS', v1) not in M.CapacityFactor_rsdtv:
+										M.CapacityFactor_rsdtv.add((r1, s, d, t1+'_TRANS', v1))
+										M.CapacityFactorProcess[r1, s, d, t1+'_TRANS', v1] = M.CapacityFactorProcess[r1, s, d, t1, v1]
+							if t1+'_TRANS' not in M.tech_production:
+								M.tech_production.add(t1+'_TRANS')
+							M.Efficiency[r1, o1, t1+'_TRANS', v1, o1] = 1
+							if (r1,t1+'_TRANS') not in M.CapacityToActivity.keys():
+								M.CapacityToActivity[r1,t1+'_TRANS'] = M.CapacityToActivity[r1, t1]
 
-		
+	for r, i, t, v, o in M.Efficiency.sparse_iterkeys():
+		if t=='SRE_TRANS':
+			print(r,i,t,v,o)
+
 	l_unused_techs = M.tech_all - l_used_techs
 	if l_unused_techs:
 		msg = ("Notice: '{}' specified as technology, but it is not utilized in "
@@ -885,7 +910,6 @@ process indices that may be specified in the LifetimeProcess parameter.
 
 	  for r, i, t, v, o in M.Efficiency.sparse_iterkeys()
 	)
-
 	return indices
 
 def LifetimeLoanProcessIndices ( M ):
@@ -1046,10 +1070,10 @@ def CommodityBalanceAnnualConstraintIndices ( M ):
 
 	period_commodity = period_commodity_with_up.intersection( period_commodity_with_dn )
 
-	for r, p, o in period_commodity:
-		if ('PADD' in r) & ('-' not in r):
-			print(r,p,o)
-			#print(r, p, o, M.commodityDStreamProcess[ r, p, o ])
+	#for r, p, o in period_commodity:
+	#	if ('PADD' in r) & ('-' not in r):
+	#		print(r,p,o)
+	#		#print(r, p, o, M.commodityDStreamProcess[ r, p, o ])
 	indices = set(
 	  (r, p, o)
 
@@ -1058,6 +1082,11 @@ def CommodityBalanceAnnualConstraintIndices ( M ):
 	  for t, v in M.commodityUStreamProcess[ r, p, o ]
 	  if (r, t) not in M.tech_storage and t in M.tech_annual
 	)
+
+	for (r,p,o) in period_commodity_with_dn:
+		if ('PADD' in r) & ('GAS_S' in o) & (p==2017):
+			print(r,p,o)
+
 	return indices
 
 
