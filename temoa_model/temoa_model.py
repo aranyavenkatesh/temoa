@@ -131,8 +131,8 @@ def temoa_create_model(name="Temoa"):
     M.ExistingCapacity = Param(M.RegionalIndices, M.tech_all, M.vintage_exist)
 
     M.Efficiency = Param(
-        M.RegionalIndices, M.commodity_SNG, M.tech_all, M.vintage_all, M.commodity_carrier
-    )
+        M.RegionalIndices, M.commodity_SNG, M.tech_all, M.vintage_all, M.commodity_carrier,
+    mutable=True)
     M.validate_UsedEfficiencyIndices = BuildAction(rule=CheckEfficiencyIndices)
 
     M.CapacityFactor_rsdtv = Set(dimen=5, initialize=CapacityFactorProcessIndices)
