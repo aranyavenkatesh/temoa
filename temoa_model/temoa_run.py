@@ -131,6 +131,8 @@ class TemoaSolver(object):
 			self.optimizer = pyomo.opt.SolverManagerFactory('neos')
 		else:
 			self.optimizer = SolverFactory( self.options.solver )
+			if self.options.solver=='cplex':
+				self.optimizer.options['threads']=1
 
 		if self.optimizer:
 			pass
